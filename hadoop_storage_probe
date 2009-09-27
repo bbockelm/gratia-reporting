@@ -24,9 +24,16 @@ if 'VDT_LOCATION' in os.environ:
     if gratia_path not in sys.path and os.path.exists(gratia_path):
         sys.path.append(gratia_path)
 
-import Gratia
-import StorageElement
-import StorageElementRecord
+has_gratia = True
+try:
+    import Gratia
+    import StorageElement
+    import StorageElementRecord
+except:
+    has_gratia = False
+    Gratia = None
+    StorageElement = None
+    StorageElementRecord = None
 
 # Bootstrap hadoop
 if 'JAVA_HOME' not in os.environ:
@@ -42,6 +49,24 @@ class Area(object):
         self.prefix = prefix.split()
 
 def configure_gratia(cp):
+    global has_gratia
+    global Gratia
+    global StorageElement
+    global StorageElementRecord
+    if not has_gratia:
+        try:
+            gratia_loc = cp.get("Gratia", "gratia_location")
+            sys.path.append(os.path.join(gratia_loc, "probe", "common"))
+            sys.path.append(os.path.join(gratia_loc, "probe", "services"))
+            Gratia = __import__("Gratia")
+            StorageElement = __import__("StorageElement")
+            StorageElementRecord = __import__("StorageElementRecord")
+            has_gratia = True
+        except:
+            raise
+    if not has_gratia:
+        print "Unable to import Gratia and Storage modules!"
+        sys.exit(1)
     try:
         probe_config = cp.get("Gratia", "ProbeConfig")
     except:

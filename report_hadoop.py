@@ -5,6 +5,7 @@ import time
 import types
 import socket
 import datetime
+import xml.dom.minidom
 
 import make_table
 
@@ -46,6 +47,22 @@ FROM
   JOIN StorageElement SE on SE2.dbid=SE.dbid
 """
 
+cmds_query = """
+select
+  JobName as Name,
+  ProjectName as SEUniqueID,
+  R.Value as TagName,
+  JURX.ExtraXml as Xml,
+  EndTime
+FROM JobUsageRecord JUR
+JOIN Resource R on R.dbid=JUR.dbid and R.Description="CustomInfo"
+JOIN JobUsageRecord_Xml JURX on JURX.dbid = JUR.dbid
+WHERE
+  DATE(EndTime) = %s
+GROUP BY Name, SEUniqueID
+HAVING MAX(EndTime)
+"""
+
 def GB(bytes):
     try:
         return int(round(float(bytes)/1000.**3))
@@ -60,8 +77,10 @@ class SEInfo(object):
         self._se_name = se_name
         self._log = log
         self.sas = {}
+        self._custom = {}
         self.query()
         self.query_parents()
+        self.query_cmds()
 
     def _execute(self, stmt, *args):
         if isinstance(args, types.ListType) or isinstance(args,
@@ -95,7 +114,7 @@ class SEInfo(object):
                 fileCount, 'FileCountLimit': fileCountLimit, 'UsedSpace': \
                 usedSpace}
             if info['MeasurementType'] == 'logical' and info['SpaceType'] == 'SE':
-                print info
+                #print info
                 continue
             self.sas[info['UniqueID']] = info
 
@@ -118,9 +137,24 @@ class SEInfo(object):
                 'SpaceType': spaceType, 'Version': version}
             self.sas[info['UniqueID']] = info
 
+    def query_cmds(self):
+        date = self._date.strftime("%Y-%m-%d")
+        results = self._execute(cmds_query, date)
+        for result in results:
+            name, unique_id, tag_name, xml_str, _ = result
+            se_cmds = self._custom.setdefault(unique_id, {})
+            try:
+                dom = xml.dom.minidom.parseString(xml_str).\
+                    getElementsByTagName(tag_name)[0]
+                output = str(dom.firstChild.data)
+            except:
+                continue
+            se_cmds[name] = output
+
     def SEs(self):
-        return [i for i in self.sas.values() if i['SpaceType'] == 'SE' and \
+        result = [i for i in self.sas.values() if i['SpaceType'] == 'SE' and \
             i['UniqueID'] == '%s:SE:%s' % (i['Name'], i['Name'])]
+        return result
 
     def areas(self, se):
         info = [i for i in self.sas.values() if i['SpaceType'] == 'Area' \
@@ -140,6 +174,9 @@ class SEInfo(object):
             if self.sas.get(parent, {}).get('ParentID', None) == se:
                 results.append(entry)
         return results
+
+    def cmds(self, se):
+        return self._custom.get(se, {})
 
 class Report(object):
 
@@ -188,7 +225,7 @@ class Report(object):
              self._yesterday, attr)), GB(self._getSeAttr(self._week, attr))]
 
     def generatePlain(self):
-        text = '%s\n  %s\n%s\n' % ('='*60, self.title(), '='*60)
+        text = '%s\n  %s\n%s\n\n' % ('='*60, self.title(), '='*60)
         text += '%s\n| Global Storage   |\n' % ('-'*20)
         
         table = make_table.Table(add_numbers=False)
@@ -203,7 +240,7 @@ class Report(object):
             if used[i] != 'UNKNOWN' and total[i] != 'UNKNOWN':
                 used_perc[i] = '%i%%' % round(100*used[i]/float(total[i]))
         table.addRow(['Used Percentage'] + used_perc)
-        text += table.plainText()
+        text += table.plainText() + '\n'
 
         areas = self._today.areas(self._se['UniqueID'])
         area_dict = dict([(i['UniqueID'], i) for i in areas])
@@ -251,6 +288,11 @@ class Report(object):
                 #    row_info[4] = GB(self._se['FreeSpace'])
                 table.addRow(row_info)
             text += table.plainText() + '\n'
+
+        for name, output in self._today.cmds(self._se['UniqueID']).items():
+            dashes = '-' * (len(name) + 4)
+            text += "%s\n| %s |\n%s\n" % (dashes, name, dashes)
+            text += output + '\n'
 
         print text
         return text
