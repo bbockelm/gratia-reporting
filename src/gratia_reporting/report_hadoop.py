@@ -7,7 +7,7 @@ import socket
 import datetime
 import xml.dom.minidom
 
-import make_table
+import gratia_reporting.make_table as make_table
 
 SER_query = """
 SELECT

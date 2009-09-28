@@ -247,7 +247,9 @@ def main():
 
         my_version=None
         if options.name:
-            report_module = __import__('report_%s' % options.name)
+            report_module = __import__('gratia_reporting.report_%s' % \
+                options.name)
+            report_module = getattr(report_module, "report_%s" % options.name)
             report = report_module.Report(conn, startDate, logger, cp)
         else:
             print >> sys.stderr, "No report specified."

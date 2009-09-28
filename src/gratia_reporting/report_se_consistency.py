@@ -4,7 +4,7 @@ import urllib2
 import datetime
 from xml.dom.minidom import parse
 
-import make_table
+import gratia_reporting.make_table as make_table
 
 SE_query = """
 SELECT
