@@ -294,7 +294,7 @@ class Report(object):
             text += "%s\n| %s |\n%s\n" % (dashes, name, dashes)
             text += output + '\n'
 
-        print text
+        self._logger.info("\n" + text)
         return text
 
     def generateHtml(self):

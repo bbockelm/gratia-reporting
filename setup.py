@@ -1,5 +1,5 @@
 
-import distutils
+from distutils.core import setup
 
 setup(name="GratiaReporting",
   version="0.1",
@@ -7,7 +7,7 @@ setup(name="GratiaReporting",
   author_email="bbockelm@cse.unl.edu",
   description="Gratia reporting package.",
 
-  package_dir={"", "src"},
+  package_dir={"": "src"},
   packages=["gratia_reporting"],
 
   data_files = [ \

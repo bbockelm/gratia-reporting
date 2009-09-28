@@ -151,6 +151,8 @@ def sendEmail( fromEmail, toList, smtpServerHost, subject, reportText, \
     msg["To"] = _toStr(toList)
     msg1 = MIMEMultipart("alternative")
     msgText1 = MIMEText("<pre>%s</pre>" % reportText, "html")
+    msgText2 = MIMEText(reportText)
+    msg1.attach(msgText2)
     msg1.attach(msgText1)
     msg.attach(msg1)
     msg = msg.as_string()
@@ -214,7 +216,7 @@ def main():
 
         configFiles = options.config
         if configFiles == "":
-            configFiles = '/etc/hadoop_chronicle.cfg'
+            configFiles = '/etc/gratia_reporting/reporting.cfg'
         configFiles = [i.strip() for i in configFiles.split(',')]
         cp = ConfigParser.ConfigParser()
         cp.read(configFiles)

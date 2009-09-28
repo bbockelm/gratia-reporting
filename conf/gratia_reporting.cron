@@ -1,0 +1,4 @@
+#<CRON> <USER> <reporting script> -n <report name> -r today -c <config file name>
+0 3 * * * root /usr/bin/python -c '__import__("gratia_reporting").report.main()' -n hadoop -r today -c /etc/gratia_reporting/reporting.cfg
+0 3 * * 1 root /usr/bin/python -c -c '__import__("gratia_reporting").report.main()' -n ce_consistency -r today -c /etc/gratia_reporting/reporting_ce_consistency.cfg
+0 3 * * 1 root /usr/bin/python -c '__import__("gratia_reporting").report.main()' -n se_consistency -r today -c /etc/gratia_reporting/reporting_se_consistency.cfg
