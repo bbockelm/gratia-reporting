@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name="GratiaReporting",
-  version="0.1",
+  version="0.3.4",
   author="Brian Bockelman",
   author_email="bbockelm@cse.unl.edu",
   description="Gratia reporting package.",
@@ -11,8 +11,10 @@ setup(name="GratiaReporting",
   packages=["gratia_reporting"],
 
   data_files = [ \
-    ("/etc/gratia_reporting/", ["conf/logging.cfg", "conf/reporting.cfg",
-      "conf/gratia_reporting.cron"]),
+    ("/etc/gratia_reporting/", ["conf/logging.cfg",
+      "conf/reporting.cfg.template", "conf/gratia_reporting.cron"]),
   ],
+
+  scripts = ['src/scripts/gratia_report']
 
 )

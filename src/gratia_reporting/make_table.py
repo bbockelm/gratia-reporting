@@ -111,7 +111,7 @@ class Table:
         output = '-' * table_len + '\n'
         return output
 
-    perc_re = re.compile(r"(\d+)%")
+    perc_re = re.compile(r"-?(\d+)%")
     def plainTextBody(self):
         header_cnt = len(self.headers)
         output = ''

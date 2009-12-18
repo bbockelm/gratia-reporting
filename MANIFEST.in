@@ -1,3 +1,3 @@
 include conf/logging.cfg
-include conf/reporting.cfg
+include conf/reporting.cfg.template
 include conf/gratia_reporting.cron
