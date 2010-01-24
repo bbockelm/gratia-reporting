@@ -367,12 +367,32 @@ class Report(object):
         table.addRow(['Offline Pool Count', len(today_dead),
             len(today_dead) - len(yest_dead),
             len(today_dead) - len(week_dead)])
-        table.addRow(['% Used Avg', '%i%%' % round(100*today_avg),
-            '%i%%' % round(100*(today_avg-yest_avg)),
-            '%i%%' % round(100*(today_avg-week_avg))])
-        table.addRow(['% Used Std Dev', '%i%%' % round(100*today_stddev),
-            '%i%%' % round(100*(today_stddev-yest_stddev)),
-            '%i%%' % round(100*(today_stddev-week_stddev))])
+        try:
+            tmp1 = '%i%%' % round(100*today_avg)
+        except:
+            tmp1 = 'UNKNOWN'
+        try:
+            tmp2 = '%i%%' % round(100*(today_avg-yest_avg))
+        except:
+            tmp2 = 'UNKNOWN'
+        try:
+            tmp3 = '%i%%' % round(100*(today_avg-week_avg))
+        except:
+            tmp3 = 'UNKNOWN'
+        table.addRow(['% Used Avg', tmp1, tmp2, tmp3])
+        try:
+            tmp1 = '%i%%' % round(100*today_stddev)
+        except:
+            tmp1 = 'UNKNOWN'
+        try:
+            tmp2 = '%i%%' % round(100*(today_stddev-yest_stddev))
+        except:
+            tmp2 = 'UNKNOWN'
+        try:
+            tmp3 = '%i%%' % round(100*(today_stddev-week_stddev))
+        except:
+            tmp3 = 'UNKNOWN'
+        table.addRow(['% Used Std Dev', tmp1, tmp2, tmp3])
         text += table.plainText()
         new_pools_today = today_poolnames.difference(yest_poolnames)
         new_pools_week = today_poolnames.difference(week_poolnames)
