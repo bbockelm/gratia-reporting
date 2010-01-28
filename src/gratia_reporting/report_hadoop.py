@@ -233,7 +233,10 @@ class Report(object):
         else:
             TotalSpace, UsedSpace = self._se['TotalSpace'], \
                 self._se['UsedSpace']
-            perc = str(int(round(UsedSpace/float(TotalSpace)*100)))
+            if TotalSpace == 0:
+                perc = "UNKNOWN"
+            else:
+                perc = str(int(round(UsedSpace/float(TotalSpace)*100)))
         title = 'The %s Chronicle | %s %% | %s' % (self._se['Implementation'],
             perc, self._startDate.strftime('%Y-%m-%d'))
         return title
@@ -263,7 +266,7 @@ class Report(object):
         table.addRow(['Used Space (GB)'] + used)
         used_perc = ['UNKNOWN', 'UNKNOWN', 'UNKNOWN']
         for i in range(3):
-            if used[i] != 'UNKNOWN' and total[i] != 'UNKNOWN':
+            if used[i] != 'UNKNOWN' and total[i] != 'UNKNOWN' and total[i] > 0:
                 used_perc[i] = '%i%%' % round(100*used[i]/float(total[i]))
         table.addRow(['Used Percentage'] + used_perc)
         text += table.plainText() + '\n'
