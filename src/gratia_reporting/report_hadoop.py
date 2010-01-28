@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/python
  
 import sys
 import math
@@ -17,11 +17,12 @@ SELECT
   SER.MeasurementType, SER.TotalSpace, SER.FreeSpace, SER.UsedSpace, SER.FileCount, SER.FileCountLimit, SE.Status
 FROM
   (SELECT * from (SELECT
-     Timestamp, UniqueID, MeasurementType, TotalSpace, FreeSpace, UsedSpace, FileCount, FileCountLimit
-   FROM StorageElementRecord FORCE INDEX(Timestamp)
+     SER.Timestamp as Timestamp, SER.UniqueID as UniqueID, SER.MeasurementType as MeasurementType, TotalSpace, FreeSpace, UsedSpace, FileCount, FileCountLimit
+   FROM StorageElementRecord SER FORCE INDEX(Timestamp)
+   JOIN (SELECT MAX(Timestamp) as Timestamp, UniqueID, MeasurementType FROM StorageElementRecord FORCE INDEX(Timestamp) WHERE Timestamp >= %s and Timestamp <= %s GROUP BY UniqueID, MeasurementType) as foo ON foo.UniqueID=SER.UniqueID AND foo.MeasurementType=SER.MeasurementType AND foo.Timestamp = SER.Timestamp
    WHERE
-     Timestamp >= %s and Timestamp <= %s
-   GROUP BY UniqueID, MeasurementType
+     SER.Timestamp >= %s and SER.Timestamp <= %s
+   GROUP BY SER.UniqueID, SER.MeasurementType
   ) as SER2 GROUP BY UniqueID, MeasurementType) as SER
 JOIN (SELECT * from StorageElement WHERE Timestamp <= %s AND SE=%s GROUP BY UniqueID HAVING MAX(Timestamp)) as SE on SE.UniqueID=SER.UniqueID
 """
@@ -118,8 +119,8 @@ class SEInfo(object):
         date = self._date.strftime('%Y-%m-%d')
         start_date = date + " 00:00:00"
         end_date   = date + " 23:59:59"
-        self.results = self._execute(SER_query, start_date, end_date, end_date,
-            self._se_name).fetchall()
+        self.results = self._execute(SER_query, start_date, end_date,
+            start_date, end_date, end_date, self._se_name).fetchall()
         for result in self.results:
             uniqId, parentId, name, spaceType, implementation, version, \
                 measurementType, totalSpace, freeSpace, usedSpace, fileCount, \
@@ -131,7 +132,6 @@ class SEInfo(object):
                 fileCount, 'FileCountLimit': fileCountLimit, 'UsedSpace': \
                 usedSpace, 'Status': status}
             if info['MeasurementType'] == 'logical' and info['SpaceType'] == 'SE':
-                #print info
                 continue
             self.sas[info['UniqueID']] = info
 
@@ -284,20 +284,24 @@ class Report(object):
             # Determine if we have any quotas at all
             has_space_quota = False
             has_file_quota = False
+            has_file_count = False
             for info in self._today.paths(self._se['UniqueID'],
                     area['UniqueID']):
                 if info['FileCountLimit']:
                     has_file_quota = True
                 if info['FreeSpace']:
                     has_space_quota = True
+                if info['FileCount']:
+                    has_file_count = True
 
             # Determine headers; removing those for quotas as necessary.
             headers = ['Path', 'Size(GB)', '1 Day Change', '7 Day Change']
             if has_space_quota:
                 headers += ['Remaining']
-            headers += ['# Files', '1 Day Change', '7 Day Change']
-            if has_file_quota:
-                headers += ['Remaining']
+            if has_file_count:
+                headers += ['# Files', '1 Day Change', '7 Day Change']
+                if has_file_quota:
+                    headers += ['Remaining']
             table.setHeaders(headers)
 
             # Add a table row for each entry in the area.
@@ -338,6 +342,11 @@ class Report(object):
                     row_info.pop(4)
                 if not has_file_quota:
                     row_info.pop(-1)
+                if not has_file_count:
+                    if has_space_quota:
+                        row_info = row_info[:5]
+                    else:
+                        row_info = row_info[:4]
                 table.addRow(row_info)
             text += table.plainText() + '\n'
 
