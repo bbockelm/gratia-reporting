@@ -327,10 +327,17 @@ class Report(object):
                     "UNKNOWN", "NO QUOTA"]
                 if yesterday != None:
                     row_info[2] = GB(info['UsedSpace']-yesterday['UsedSpace'])
-                    row_info[6] = info['FileCount']-yesterday['FileCount']
+                    if info['FileCount'] != None and yesterday['FileCount'] \
+                            != None:
+                        row_info[6] = info['FileCount']-yesterday['FileCount']
+                    else:
+                        row_info[6] = 'UNKNOWN'
                 if week != None:
                     row_info[3] = GB(info['UsedSpace']-week['UsedSpace'])
-                    row_info[7] = info['FileCount']-week['FileCount']
+                    if info['FileCount'] != None and week['FileCount'] != None:
+                        row_info[7] = info['FileCount']-week['FileCount']
+                    else:
+                        row_info[7] = 'UNKNOWN'
                 if info['FileCountLimit'] != None and info['FileCountLimit'] \
                         > 0:
                     row_info[-1] = info['FileCountLimit'] - info['FileCount']
