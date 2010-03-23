@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
  
 import sys
 import math
@@ -24,7 +24,17 @@ FROM
      SER.Timestamp >= %s and SER.Timestamp <= %s
    GROUP BY SER.UniqueID, SER.MeasurementType
   ) as SER2 GROUP BY UniqueID, MeasurementType) as SER
-JOIN (SELECT * from StorageElement WHERE Timestamp <= %s AND SE=%s GROUP BY UniqueID HAVING MAX(Timestamp)) as SE on SE.UniqueID=SER.UniqueID
+JOIN (
+  SELECT * from StorageElement SE1
+  JOIN (
+    SELECT UniqueID as UID, MAX(Timestamp) as MTM
+    FROM StorageElement
+    WHERE Timestamp <= %s and SE=%s
+    GROUP BY UniqueID
+  ) as SE2
+    ON SE2.MTM=SE1.Timestamp and SE2.UID=SE1.UniqueID
+  WHERE Timestamp <= %s AND SE=%s GROUP BY UniqueID
+) as SE on SE.UniqueID=SER.UniqueID
 """
 
 parents_query = """
@@ -120,7 +130,8 @@ class SEInfo(object):
         start_date = date + " 00:00:00"
         end_date   = date + " 23:59:59"
         self.results = self._execute(SER_query, start_date, end_date,
-            start_date, end_date, end_date, self._se_name).fetchall()
+            start_date, end_date, end_date, self._se_name, end_date,
+            self._se_name).fetchall()
         for result in self.results:
             uniqId, parentId, name, spaceType, implementation, version, \
                 measurementType, totalSpace, freeSpace, usedSpace, fileCount, \
@@ -371,13 +382,13 @@ class Report(object):
             return day_poolnames, day_avg, day_stddev
         today_poolnames, today_avg, today_stddev = make_pool_info(self._today)
         today_dead = self._today.pools(self._se['UniqueID'])
-        today_dead = [i for i in today_dead if i['Status'] == 'Closed']
+        today_dead = [i for i in today_dead if i['Status'] != 'Production']
         yest_poolnames, yest_avg, yest_stddev = make_pool_info(self._yesterday)
         yest_dead = self._yesterday.pools(self._se['UniqueID'])
-        yest_dead = [i for i in yest_dead if i['Status'] == 'Closed']
+        yest_dead = [i for i in yest_dead if i['Status'] != 'Production']
         week_poolnames, week_avg, week_stddev = make_pool_info(self._week)
         week_dead = self._week.pools(self._se['UniqueID'])
-        week_dead = [i for i in week_dead if i['Status'] == 'Closed']
+        week_dead = [i for i in week_dead if i['Status'] != 'Production']
         table = make_table.Table(add_numbers=False)
         table.setHeaders(['Statistic', 'Today', '1 Day Change', '7 Day Change'])
         table.addRow(['Online Pool Count', len(today_poolnames),
