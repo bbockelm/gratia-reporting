@@ -3,6 +3,8 @@
 SiteName=Nebraska
 database=nebraska_gratia
 logging_config=/etc/gratia_reporting/logging.cfg
+# Uncomment this line to archive reports to the web.
+report_archive_directory=/var/www/html
 
 [Report Info]
 fromName=Brian Bockelman
@@ -10,6 +12,7 @@ fromEmail=bbockelm@math.unl.edu
 toNames=['Brian Bockelman']
 toEmails=['bbockelm@cse.unl.edu']
 smtphost=localhost
+archive=/var/www/html/reports
 
 [fnal_gratia_transfer]
 user=reader
