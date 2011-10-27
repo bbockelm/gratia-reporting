@@ -191,11 +191,9 @@ class Report(object):
 
     subject = title
 
-    def generatePlain(self):
-        text = '%s\n  %s\n%s\n\n' % ('='*60, self.title(), '='*60)
-        
+    def generatePerUser(self):
         table = make_table.Table(add_numbers=False)
-        table.setHeaders(['User', 'Volume GB', 'Transfers', 'Source Site', 'Client Domain', 'Yesterday Diff', 'One Week Diff'])
+        table.setHeaders(['User', 'Volume GB', '# of Transfers', 'Source Site', 'Client Domain', 'Yesterday Diff', 'One Week Diff'])
 
         today_info = {}
         for key, val in self._info.getInfo().items():
@@ -213,7 +211,13 @@ class Report(object):
                 if alt_key in today_info:
                     today_info[alt_key]['OneWeek'] = val['Volume']
 
-        for val in today_info.values():
+        def cmpVolume(key1, key2):
+            return -cmp(today_info[key1]['Volume'], today_info[key2]['Volume'])
+
+        keys = today_info.keys()
+        keys.sort(cmpVolume)
+        for key in keys:
+            val = today_info[key]
             first_row = True
             for client in val['Clients']:
                 client_str = '%s %d%%' % (client[0], int(round(client[1])))
@@ -231,7 +235,95 @@ class Report(object):
                     table.addRow(["", "", "", "", client_str, "", ""])
                 first_row = False
 
-        text += table.plainText()
+        return table.plainText()
+
+    def generatePerSiteClient(self):
+        table = make_table.Table(add_numbers=False)
+        table.setHeaders(['Source Site', 'Client Domain', 'Volume GB', 'Yesterday Diff', 'One Week Diff'])
+
+        siteclient_info = {}
+        yesterday = self._startDate - datetime.timedelta(1, 0)
+        oneweek = self._startDate - datetime.timedelta(7, 0)
+        for key, val in self._info.getInfo().items():
+            (date, site, cn) = key
+            for client in val.get('Clients', []):
+                new_key = (site, client[0])
+                if date == self._startDate:
+                    info = siteclient_info.setdefault(new_key, {'Volume': 0, 'Transfers': 0, 'Site': site})
+                    info['Volume'] += val['Volume']*client[1]/100.
+                elif date == yesterday:
+                    info = siteclient_info.setdefault(new_key, {'Volume': 0, 'Transfers': 0, 'Site': site})
+                    info.setdefault('Yesterday', 0)
+                    info['Yesterday'] += val['Volume'] * client[1]/100.
+                elif date == oneweek:
+                    info = siteclient_info.setdefault(new_key, {'Volume': 0, 'Transfers': 0, 'Site': site})
+                    info.setdefault('OneWeek', 0)
+                    info['OneWeek'] += val['Volume'] * client[1]/100.
+
+        keys = siteclient_info.keys()
+        def cmpSiteClient(key1, key2):
+            return cmp(siteclient_info[key1]['Volume'], siteclient_info[key2]['Volume'])
+        keys.sort()
+        for key in keys:
+            val = siteclient_info[key]
+            if 'Yesterday' in val and val['Yesterday']:
+                yesterday = '%d%%' % int(round((val['Volume']-val['Yesterday']) / float(val['Yesterday'])*100))
+            else:
+                yesterday = "Unknown"
+            if 'OneWeek' in val and val['OneWeek']:
+                oneweek = '%d%%' % int(round((val['Volume']-val['OneWeek']) / float(val['OneWeek'])*100))
+            else:
+                oneweek = "Unknown"
+            table.addRow([val['Site'], key[1], int(round(val['Volume']/1000)), yesterday, oneweek])
+
+        return table.plainText()
+
+    def generatePerSite(self):
+        table = make_table.Table(add_numbers=False)
+        table.setHeaders(['Source Site', 'Volume GB', '# of Transfers', 'Yesterday Diff', 'One Week Diff'])
+
+        site_info = {}
+        yesterday = self._startDate - datetime.timedelta(1, 0)
+        oneweek = self._startDate - datetime.timedelta(7, 0)
+        for key, val in self._info.getInfo().items():
+            (date, site, cn) = key
+            if date == self._startDate:
+                info = site_info.setdefault(key[1], {'Volume': 0, 'Transfers': 0, 'Site': site})
+                info['Volume'] += val['Volume']
+                info['Transfers'] += val['Transfers']
+            elif date == yesterday:
+                info = site_info.setdefault(key[1], {'Volume': 0, 'Transfers': 0, 'Site': site})
+                info.setdefault('Yesterday', 0)
+                info['Yesterday'] += val['Volume']
+            elif date == oneweek:
+                info = site_info.setdefault(key[1], {'Volume': 0, 'Transfers': 0, 'Site': site})
+                info.setdefault('OneWeek', 0)
+                info['OneWeek'] += val['Volume']
+
+        keys = site_info.keys()
+        keys.sort()
+        for key in keys:
+            val = site_info[key]
+            if 'Yesterday' in val and val['Yesterday']:
+                yesterday = '%d%%' % int(round((val['Volume']-val['Yesterday']) / float(val['Yesterday'])*100))
+            else:
+                yesterday = "Unknown"
+            if 'OneWeek' in val and val['OneWeek']:
+                oneweek = '%d%%' % int(round((val['Volume']-val['OneWeek']) / float(val['OneWeek'])*100))
+            else:
+                oneweek = "Unknown"
+            table.addRow([val['Site'], int(round(val['Volume']/1000)), val['Transfers'], yesterday, oneweek])
+
+        return table.plainText()
+
+    def generatePlain(self):
+        text = '%s\n  %s\n%s\n\n' % ('='*60, self.title(), '='*60)
+
+        text += self.generatePerSite() + "\n"
+
+        text += self.generatePerSiteClient() + "\n"
+       
+        text += self.generatePerUser()
 
         self._logger.info("\n" + text)
         return text
