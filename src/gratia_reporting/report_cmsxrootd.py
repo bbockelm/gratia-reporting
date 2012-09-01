@@ -2,7 +2,6 @@
 import re 
 import sys
 import math
-import sets
 import time
 import types
 import string
@@ -166,6 +165,7 @@ class Report(object):
         self._cp = cp
         self._info = TransferInfo(startDate - datetime.timedelta(7, 0), 
             startDate, conn, logger)
+        overflow_jobs_report.SetConnection(conn)
 
     def title(self):
         yesterday = self._startDate - datetime.timedelta(1, 0)
@@ -187,7 +187,7 @@ class Report(object):
                 increase_text = "%d%% increase" % int(round(diff*100))
             else:
                 increase_text = "%d%% decrease" % int(round(-diff*100))
-        return 'Xrootd Summary for %s | %.2f TB | %s' % (self._startDate.strftime("%Y-%m-%d"), today_tb, increase_text)
+        return 'Xrootd %s | %.2f TB | %s' % (self._startDate.strftime("%Y-%m-%d"), today_tb, increase_text)
 
     subject = title
 
@@ -321,9 +321,21 @@ class Report(object):
 
         text += self.generatePerSite() + "\n"
 
+        try:
+            text += overflow_jobs_report.mainGetOverflowjobsInfo1() + "\n"
+        except Exception, e:
+            text += "(An error occurred when generating this portion of the report)\n"
+            log.exception(e)
+
         text += self.generatePerSiteClient() + "\n"
        
         text += self.generatePerUser()
+
+        try:
+            text += overflow_jobs_report.mainGetOverflowjobsInfo2()
+        except Exception, e:
+            text += "(An error occurred when generating this portion of the report)\n"
+            log.exception(e)
 
         self._logger.info("\n" + text)
         return text
