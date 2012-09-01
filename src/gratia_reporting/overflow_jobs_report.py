@@ -98,6 +98,7 @@ def SetConnection(conn):
     """
     Set the module's connection object.
     """
+    global g_Conn
     g_Conn = conn
 
 '''
@@ -107,10 +108,10 @@ def ConnectDatabase():
     if not g_Conn:
         raise Exception("Module connection has not been set; invoke overflow_jobs_report.SetConnection")
 
-    cursor = conn.cursor()
+    cursor = g_Conn.cursor()
     
     # return database and cursor
-    return conn, cursor
+    return cursor
 
 '''
 Query database gratia, and compute the following:
@@ -1275,11 +1276,10 @@ def mainGetOverflowjobsInfo1():
     if JobLatestEndTime != None:
         LatestEndTime =  JobLatestEndTime
     # connect the database server rcf-gratia.unl.edu
-    db, cursor = ConnectDatabase()
-    if db:
+    cursor = ConnectDatabase()
+    if cursor:
         # query database gratia, and output statistic results
         QueryGratia(cursor)
-        db.close()
     return outputmsg
 
 def mainGetOverflowjobsInfo2():
@@ -1300,9 +1300,9 @@ def mainGetOverflowjobsInfo2():
     if JobLatestEndTime != None:
         LatestEndTime =  JobLatestEndTime
     # connect the database server rcf-gratia.unl.edu
-    db, cursor = ConnectDatabase()
+    cursor = ConnectDatabase()
     returntext = ""
-    if db:
+    if cursor:
         # Get all the filenames in the form of xrootd.log, then for each file, build the hash table
         filenames = os.listdir(xrootd_log_dir)
         for filename in filenames:
@@ -1310,8 +1310,6 @@ def mainGetOverflowjobsInfo2():
                 buildJobLoginDisconnectionAndSoOnDictionary(os.path.join(xrootd_log_dir, filename))
         # check with xrootd log, and output possible overflow jobs with exit code 84 or 85
         FilterCondorJobsExitCode84or85(cursor)
-        # disconnect the database
-        db.close()
         returntext = PrintPossibleOverflowJobs()
     return returntext
 

@@ -8,6 +8,7 @@ import string
 import datetime
 
 import gratia_reporting.make_table as make_table
+import gratia_reporting.overflow_jobs_report as overflow_jobs_report
 
 transfer_query = """
 SELECT
@@ -325,7 +326,7 @@ class Report(object):
             text += overflow_jobs_report.mainGetOverflowjobsInfo1() + "\n"
         except Exception, e:
             text += "(An error occurred when generating this portion of the report)\n"
-            log.exception(e)
+            self._logger.exception(e)
 
         text += self.generatePerSiteClient() + "\n"
        
@@ -335,7 +336,7 @@ class Report(object):
             text += overflow_jobs_report.mainGetOverflowjobsInfo2()
         except Exception, e:
             text += "(An error occurred when generating this portion of the report)\n"
-            log.exception(e)
+            self._logger.exception(e)
 
         self._logger.info("\n" + text)
         return text
