@@ -315,9 +315,14 @@ class Report(object):
                     headers += ['Remaining']
             table.setHeaders(headers)
 
+            total_size, total_files = 0, 0
             # Add a table row for each entry in the area.
             for info in self._today.paths(self._se['UniqueID'],
                     area['UniqueID']):
+                if info['FileCount']:
+                    total_files += info['FileCount']
+                if info['UsedSpace']:
+                    total_size += info['UsedSpace']
                 path = info['UniqueID']
                 yesterday_paths = self._yesterday.paths(self._se['UniqueID'],
                     area['UniqueID'])
@@ -366,7 +371,13 @@ class Report(object):
                     else:
                         row_info = row_info[:4]
                 table.addRow(row_info)
-            text += table.plainText() + '\n'
+            text += table.plainText()
+            text += "Total size: %s GB" % make_table.ftoa(GB(total_size))
+            if has_file_count:
+                text += ", total file count: %s\n" % make_table.ftoa(total_files)
+            else:
+                text += "\n"
+            text += '\n'
 
         name = "Pool Information"
         dashes = '-' * (len(name) + 4)

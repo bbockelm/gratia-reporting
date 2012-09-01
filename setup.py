@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name="GratiaReporting",
-  version="0.3.8",
+  version="0.3.9",
   author="Brian Bockelman",
   author_email="bbockelm@cse.unl.edu",
   description="Gratia reporting package.",
